@@ -40,7 +40,7 @@ void delete_rbtree(rbtree *t) {
   free(root);
   free(t);
 }
-void rbtree_leftrotate(rbtree *t, node_t *x){
+void rbtree_left_rotate(rbtree *t, node_t *x){
   node_t *y = x->right; // x의 오른쪽 서브트리 y 결국 y를 끌어 올리고 x내려야 함
   x->right = y->left; // y의 왼쪽 서브트리를 x의 오른쪽 서브트리로 옮김
 
@@ -66,7 +66,7 @@ void rbtree_leftrotate(rbtree *t, node_t *x){
   x->parent = y;
 }
 
-void rbtree_rightrotate(rbtree *t, node_t *x){
+void rbtree_right_rotate(rbtree *t, node_t *x){
   node_t *y = x->left; // x의 왼쪽 서브트리 y 결국 y를 끌어 올리고 x내려야 함
   x->left = y->right; // y의 오른쪽 서브트리를 x의 왼쪽 서브트리로 옮김
 
@@ -110,12 +110,12 @@ void rbtree_insert_fixup(rbtree *t, node_t *z){
         if (z == z->parent) // case2: 부모가 red이고 삼촌이 black일때 z가 오른쪽 자식인 경우 case3으로 만듦
         {
           z = z->parent; // z의 부모를 기준으로 왼쪽으로 회전
-          rbtree_leftrotate(t,z);
+          rbtree_left_rotate(t,z);
         }
         // case3: 부모가 red이고 삼촌이 black일때 z가 왼쪽 자식인 경우
         z->parent->color = RBTREE_BLACK;
         z->parent->parent = RBTREE_RED;
-        rbtree_rightrotate(t,z);
+        rbtree_right_rotate(t,z);
       }
     }
     else // z의 부모 노드가 조부모노드의 오른쪽인 경우
@@ -131,12 +131,12 @@ void rbtree_insert_fixup(rbtree *t, node_t *z){
         if (z == z->parent) // case2: 부모가 red이고 삼촌이 black일때 z가 왼쪽 자식인 경우
         {
           z = z->parent; // z의 부모를 기준으로 오른쪽으로 회전
-          rbtree_rightrotate(t,z);
+          rbtree_right_rotate(t,z);
         }
 
         z->parent->color = RBTREE_BLACK;
         z->parent->parent = RBTREE_RED;
-        rbtree_leftrotate(t,z);
+        rbtree_left_rotate(t,z);
       }
     }
   }
@@ -228,9 +228,154 @@ node_t *rbtree_max(const rbtree *t) {
   return t->root;
 }
 
+void rbtree_trans_plant(rbtree *t, node_t *u, node_t *v){
+  if (u->parent == t->nil) // u노드가 루트였다면 v를 루트로 지정
+  {
+    t->root = v;
+  }
+  else if (u == u->parent->left) // u노드가 부모의 왼쪽 자식 노드였다면 v를 u의 부모노드의 왼쪽 자식 노드로 지정
+  {
+    u->parent->left = v;
+  }
+  else // u노드가 부모의 오른쪽 자식 노드였다면 v를 u의 부모노드의 오른쪽 자식 노드로 지정
+  {
+    u->parent->right = v;
+  }
+  // v의 부모노드를 u의 부모노드로 설정
+  v->parent = u->parent;
+}
+
+void rbtree_delete_fixup(rbtree *t, node_t *x){
+  // x는 extra_black extra_black을 제거하려면 x가 red가 되거나 extrablack이 root까지 올라가야 함
+  while (x != t->root && x->color == RBTREE_BLACK)
+  {
+    // extra_black이 부여된 노드가 부모의 왼쪽 자식노드일 떄
+    if (x == x->parent->left)
+    {
+      node_t *w = x->parent->right; // x의 형제 노드
+      // case1: 형제노드가 red일 때 -> case 2, 3, 4로 변경됨
+      // 형제노드 w를 black으로 부모노드를 red로 변경 후 왼쪽으로 회전
+      if (w->color == RBTREE_RED)
+      {
+        w->color = RBTREE_BLACK;
+        x->parent->color = RBTREE_RED;
+        rbtree_left_rotate(t, x->parent);
+        w = x->parent ->right; // 형제노드 재지정
+      }
+      // case2: 형제노드의 자식 노드들이 모두 black일 때 -> case 1, 2, 3, 4로 변경됨
+      // 형제노드 w의 색을 red로 바꾸고 x노드의 extra_black을 부모노드로 위힘하고 다시 부모노드에서 부터 확인한다
+      if (w->left->color == RBTREE_BLACK && w->right->color == RBTREE_RED)
+      {
+        w->color = RBTREE_RED;
+        x = x->parent;
+      }
+      else
+      {
+        // case 3: 형제노드 w의 왼쪽 자식노드가 red일 때 -> case 4로 변경
+        // 형제노드 w와 왼쪽 자식 노드의 색깔을 교체 후 w를 기준으로 오른쪽 회전
+        if ( w->right->color == RBTREE_BLACK)
+        {
+          w->left->color = RBTREE_BLACK;
+          w->color = RBTREE_RED;
+          rbtree_right_rotate(t, w);
+          w = w->parent->right; // x노드의 형제노드 재지정
+        }
+        // case 4: 형제노드 w의 오른쪽 자식노드가 red일떄 -> case 4를 수행후 extra_black이 상쇄됨
+        // 형제노드 w와 부모노드의 색깔을 교체하고 w노드의 오른쪽 자식노드의 색깔을 black으로 변경후 부모노드 기준으로 왼쪽회전
+        w->color = x->parent->color;
+        x->parent->color = RBTREE_BLACK;
+        w->right->color = RBTREE_BLACK;
+        rbtree_left_rotate(t, x->parent);
+        x = t->root; // x노드를 root로 지정해 while 탈출
+      }
+    }
+    else
+    {
+      node_t *w = x->parent->left;
+      if (w->color == RBTREE_RED)
+      {
+        w->color = RBTREE_BLACK;
+        x->parent->color = RBTREE_RED;
+        rbtree_right_rotate(t, x->parent);
+        w = x->parent ->left;
+      }
+      if (w->right->color == RBTREE_BLACK && w->left->color == RBTREE_RED)
+      {
+        w->color = RBTREE_RED;
+        x = x->parent;
+      }
+      else
+      {
+        if ( w->left->color == RBTREE_BLACK)
+        {
+          w->right->color = RBTREE_BLACK;
+          w->color = RBTREE_RED;
+          rbtree_left_rotate(t, w);
+          w = w->parent->left;
+        }
+        w->color = x->parent->color;
+        x->parent->color = RBTREE_BLACK;
+        w->left->color = RBTREE_BLACK;
+        rbtree_right_rotate(t, x->parent);
+        x = t->root;
+      }
+    }
+  }
+  // 루트노드 x의 색깔을 black으로 지정
+  x->color = RBTREE_BLACK;
+}
+
+node_t *rbtree_minimum(rbtree *t, node_t *cur){
+  // cur 노드의  오른쪽 가장 깊은곳으로 이동
+  while (cur->left != t->nil)
+  {
+    cur = cur->left;
+  }
+  return cur;
+}
+
 int rbtree_erase(rbtree *t, node_t *p) {
-  // TODO: implement erase
-  return 0;
+  node_t *y = p; // 삭제할 노드 p를 대체할 노드 y
+  node_t *x; // 대체된 노드y의 자리에 대체될 노드 x;
+  color_t y_origin_color = y->color; // 대체된 노드의 원래 색깔을 저장
+  int delete_key = p->key;
+
+  // 자식 노드가 한개 이하일 때 그냥 교체하면 됨
+  if (p->left == t->nil) 
+  {
+    x = p->right;
+    rbtree_trans_plant(t, p, p->right); // p노드의 자리에 p노드의 오른쪽 서브트리를 옮긴다
+  }
+  else if (p->right == t->nil)
+  {
+    x = p->left;
+    rbtree_trans_plant(t, p, p->left); // p노드의 자리에 p노드의 왼쪽 서브트리를 옮긴다
+  }
+  // 자식노드가 2개일 때
+  else{
+    y = rbtree_minimum(t, p->right); // 삭제할 노드 p의 후임자 노드 y
+    y_origin_color = y->color; // 후임자 노드 y의 색깔 업데이트
+    x = y->right;
+    // 교체할 노드 y의 부모가 삭제할 노드 p의 자식 노드가 아닐때 y의 왼쪽 자식을 y위치로 옮김
+    if (y->parent != p)
+    {
+      rbtree_trans_plant(t, y, y->right);
+      y->right = p->right;
+      y->right->parent = y;
+    }
+    // p노드 위치에 y노를 옮김
+    rbtree_trans_plant(t, p, y);
+    y->left = p->left;
+    y->left->parent = y;
+    y->color = p->color;
+  }
+  // 사라진 색깔리 black이면 재조정
+  if (y_origin_color == RBTREE_BLACK)
+    rbtree_delete_fixup(t, x);
+  // 삭제할 노드 p 삭제
+  free(p);
+  p = NULL;
+  return delete_key;
 }
 
 int rbtree_to_array(const rbtree *t, key_t *arr, const size_t n) {

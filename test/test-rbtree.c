@@ -71,8 +71,8 @@ void test_erase_root(const key_t key) {
 #else
   assert(t->root == NULL);
 #endif
-
   delete_rbtree(t);
+  printf("Passed test_erase_root!\n");
 }
 
 static void insert_arr(rbtree *t, const key_t *arr, const size_t n) {
@@ -375,7 +375,7 @@ int main(void) {
   test_init();
   test_insert_single(1024);
   test_find_single(512, 1024);
-  // test_erase_root(128);
+  test_erase_root(128);
   // test_find_erase_fixed();
   // test_minmax_suite();
   // test_to_array_suite();
