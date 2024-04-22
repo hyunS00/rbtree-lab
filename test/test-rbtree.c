@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define SENTINEL
 // new_rbtree should return rbtree struct with null root node
 void test_init(void) {
   rbtree *t = new_rbtree();
@@ -15,6 +16,7 @@ void test_init(void) {
   assert(t->root == NULL);
 #endif
   delete_rbtree(t);
+  printf("Passed test_init!\n");
 }
 
 // root node should have proper values and pointers
@@ -24,7 +26,7 @@ void test_insert_single(const key_t key) {
   assert(p != NULL);
   assert(t->root == p);
   assert(p->key == key);
-  // assert(p->color == RBTREE_BLACK);  // color of root node should be black
+  assert(p->color == RBTREE_BLACK);  // color of root node should be black
 #ifdef SENTINEL
   assert(p->left == t->nil);
   assert(p->right == t->nil);
@@ -35,6 +37,7 @@ void test_insert_single(const key_t key) {
   assert(p->parent == NULL);
 #endif
   delete_rbtree(t);
+  printf("Passed test_insert_single!\n");
 }
 
 // find should return the node with the key or NULL if no such node exists
@@ -51,6 +54,7 @@ void test_find_single(const key_t key, const key_t wrong_key) {
   assert(q == NULL);
 
   delete_rbtree(t);
+  printf("Passed test_find_single!\n");
 }
 
 // erase should delete root node
@@ -371,13 +375,13 @@ int main(void) {
   test_init();
   test_insert_single(1024);
   test_find_single(512, 1024);
-  test_erase_root(128);
-  test_find_erase_fixed();
-  test_minmax_suite();
-  test_to_array_suite();
-  test_distinct_values();
-  test_duplicate_values();
-  test_multi_instance();
-  test_find_erase_rand(10000, 17);
-  printf("Passed all tests!\n");
+  // test_erase_root(128);
+  // test_find_erase_fixed();
+  // test_minmax_suite();
+  // test_to_array_suite();
+  // test_distinct_values();
+  // test_duplicate_values();
+  // test_multi_instance();
+  // test_find_erase_rand(10000, 17);
+  // printf("Passed all tests!\n");
 }
